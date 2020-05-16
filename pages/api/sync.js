@@ -79,8 +79,8 @@ export default async (req, res) => {
   }
 
   // Create the tasks
-  for (let i = 0; i < airtableIngredients.length; i++) {
-    await fetch(`https://api.todoist.com/rest/v1/tasks`, {
+  const taskCreationPromises = airtableIngredients.map((ingredient) => {
+    return fetch(`https://api.todoist.com/rest/v1/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -88,13 +88,14 @@ export default async (req, res) => {
       },
       body: JSON.stringify({
         project_id: todoistProjectId,
-        content: airtableIngredients[i]["Shopping list entry"],
-        section_id: shoppingAreas.find(
-          (area) => area.name === airtableIngredients[i].Area
-        ).id,
+        content: ingredient["Shopping list entry"],
+        section_id: shoppingAreas.find((area) => area.name === ingredient.Area)
+          .id,
       }),
     });
-  }
+  });
+
+  await Promise.all(taskCreationPromises);
 
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json");
