@@ -8,8 +8,12 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "^9.3.3",
+    "airtable": "^0.8.1",
+    "next": "^9.4.0",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
+  },
+  "devDependencies": {
+    "vercel": "^19.0.1"
   }
 }
