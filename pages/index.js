@@ -1,36 +1,47 @@
 import Head from "next/head";
+import { useState } from "react";
 
 const Home = () => {
+  const [buttonLoading, setButtonLoading] = useState(false);
+
   return (
     <div className="container">
       <form
         action="/api/sync"
         method="GET"
         onSubmit={async (e) => {
+          setButtonLoading(true);
           e.preventDefault();
           const syncResponse = await fetch("/api/sync");
           const syncResponseJson = await syncResponse.json();
           console.log(syncResponseJson);
+          setButtonLoading(false);
         }}
       >
         <button type="submit">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="icon"
-          >
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-          </svg>
-          Build shopping list
+          {buttonLoading ? (
+            "Loading..."
+          ) : (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="icon"
+              >
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              Build shopping list
+            </>
+          )}
         </button>
       </form>
       <style jsx>{`
@@ -56,6 +67,28 @@ const Home = () => {
             0px 4px 15px rgba(0, 0, 0, 0.15);
           cursor: pointer;
         }
+        button:after {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          border-radius: 99999px;
+          z-index: 2;
+        }
+        button:focus {
+          border: none;
+          outline: 0 !important;
+          outline-style: none;
+        }
+        button:active {
+          box-shadow: 0 15px 20px rgba(0, 0, 0, 0.02);
+        }
+        button:active:after {
+          box-shadow: inset 0px -2px 5px rgb(255, 255, 255),
+            inset 0px 2px 5px rgba(0, 0, 0, 0.15);
+        }
         .icon {
           margin-right: 16px;
           display: inline-block;
@@ -65,6 +98,8 @@ const Home = () => {
         :root {
           --bg-color: #f2f2f2;
           --color: rgb(120, 120, 120);
+          --offset: 187;
+          --duration: 2s;
         }
         html,
         body {
