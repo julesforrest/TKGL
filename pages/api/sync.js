@@ -8,7 +8,6 @@ const todoistProjectId = parseInt(process.env.TODOIST_PROJECT_ID, 10);
 const base = new Airtable({ apiKey: airtableApiKey }).base(airtableBaseId);
 
 export default async (req, res) => {
-  console.time("Getting results from Airtable");
   // Get data from Airtable
   const airtableIngredients = (
     await base("Ingredients")
@@ -20,9 +19,7 @@ export default async (req, res) => {
   )
     .map((record) => record.fields)
     .sort((a, b) => (a.Area > b.Area ? 1 : -1));
-  console.timeEnd("Getting results from Airtable");
 
-  console.time("Getting sections from Todoist");
   // Get all the sections
   const sectionsResponse = await fetch(
     "https://api.todoist.com/rest/v1/sections",
@@ -32,7 +29,6 @@ export default async (req, res) => {
       },
     }
   );
-  console.timeEnd("Getting sections from Todoist");
 
   // Filter so that we're only looking at sections in the relevant project.
   const sectionsToDelete = (await sectionsResponse.json()).filter(
@@ -49,10 +45,8 @@ export default async (req, res) => {
     });
   });
 
-  console.time("Deleting sections from Todoist");
   // Delete 'em
   await Promise.all(deleteSectionsPromises);
-  console.timeEnd("Deleting sections from Todoist");
 
   // These are the section that we'll create in Todoist
   let shoppingAreas = [];
@@ -63,28 +57,25 @@ export default async (req, res) => {
     }
   });
 
-  console.time("Creating sections in Todoist");
-  // Create the setions
-  for (let i = 0; i < shoppingAreas.length; i++) {
-    const sectionResponse = await fetch(
-      `https://api.todoist.com/rest/v1/sections`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${todoistToken}`,
-        },
-        body: JSON.stringify({
-          project_id: todoistProjectId,
-          name: shoppingAreas[i].name,
-        }),
-      }
-    );
+  const createSectionPromises = shoppingAreas.map((area) =>
+    fetch(`https://api.todoist.com/rest/v1/sections`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${todoistToken}`,
+      },
+      body: JSON.stringify({
+        project_id: todoistProjectId,
+        name: area.name,
+      }),
+    })
+  );
 
-    const createdSection = await sectionResponse.json();
-    shoppingAreas[i].id = createdSection.id;
-  }
-  console.timeEnd("Creating sections in Todoist");
+  const createdSectionsResponses = await Promise.all(createSectionPromises);
+
+  const createdSections = await Promise.all(
+    createdSectionsResponses.map((res) => res.json())
+  );
 
   // Create the tasks
   const taskCreationPromises = airtableIngredients.map((ingredient) => {
@@ -97,15 +88,14 @@ export default async (req, res) => {
       body: JSON.stringify({
         project_id: todoistProjectId,
         content: ingredient["Shopping list entry"],
-        section_id: shoppingAreas.find((area) => area.name === ingredient.Area)
-          .id,
+        section_id: createdSections.find(
+          (section) => section.name === ingredient.Area
+        ).id,
       }),
     });
   });
 
-  console.time("Done creating tasks");
   await Promise.all(taskCreationPromises);
-  console.timeEnd("Done creating tasks");
 
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json");
