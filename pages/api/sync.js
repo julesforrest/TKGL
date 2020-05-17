@@ -8,7 +8,7 @@ const todoistProjectId = parseInt(process.env.TODOIST_PROJECT_ID, 10);
 const base = new Airtable({ apiKey: airtableApiKey }).base(airtableBaseId);
 
 export default async (req, res) => {
-  console.log("Getting results from Airtable");
+  console.time("Getting results from Airtable");
   // Get data from Airtable
   const airtableIngredients = (
     await base("Ingredients")
@@ -20,8 +20,9 @@ export default async (req, res) => {
   )
     .map((record) => record.fields)
     .sort((a, b) => (a.Area > b.Area ? 1 : -1));
+  console.timeEnd("Getting results from Airtable");
 
-  console.log("Getting sections from Todoist");
+  console.time("Getting sections from Todoist");
   // Get all the sections
   const sectionsResponse = await fetch(
     "https://api.todoist.com/rest/v1/sections",
@@ -31,6 +32,7 @@ export default async (req, res) => {
       },
     }
   );
+  console.timeEnd("Getting sections from Todoist");
 
   // Filter so that we're only looking at sections in the relevant project.
   const sectionsToDelete = (await sectionsResponse.json()).filter(
@@ -47,9 +49,10 @@ export default async (req, res) => {
     });
   });
 
-  console.log("Deleting sections from Todoist");
+  console.time("Deleting sections from Todoist");
   // Delete 'em
   await Promise.all(deleteSectionsPromises);
+  console.timeEnd("Deleting sections from Todoist");
 
   // These are the section that we'll create in Todoist
   let shoppingAreas = [];
@@ -60,7 +63,7 @@ export default async (req, res) => {
     }
   });
 
-  console.log("Creating sections in Todoist");
+  console.time("Creating sections in Todoist");
   // Create the setions
   for (let i = 0; i < shoppingAreas.length; i++) {
     const sectionResponse = await fetch(
@@ -81,6 +84,7 @@ export default async (req, res) => {
     const createdSection = await sectionResponse.json();
     shoppingAreas[i].id = createdSection.id;
   }
+  console.timeEnd("Creating sections in Todoist");
 
   // Create the tasks
   const taskCreationPromises = airtableIngredients.map((ingredient) => {
@@ -99,8 +103,9 @@ export default async (req, res) => {
     });
   });
 
-  console.log("Done creating tasks");
+  console.time("Done creating tasks");
   await Promise.all(taskCreationPromises);
+  console.timeEnd("Done creating tasks");
 
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json");
