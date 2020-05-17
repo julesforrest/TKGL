@@ -8,6 +8,7 @@ const todoistProjectId = parseInt(process.env.TODOIST_PROJECT_ID, 10);
 const base = new Airtable({ apiKey: airtableApiKey }).base(airtableBaseId);
 
 export default async (req, res) => {
+  console.log("Getting results from Airtable");
   // Get data from Airtable
   const airtableIngredients = (
     await base("Ingredients")
@@ -20,6 +21,7 @@ export default async (req, res) => {
     .map((record) => record.fields)
     .sort((a, b) => (a.Area > b.Area ? 1 : -1));
 
+  console.log("Getting sections from Todoist");
   // Get all the sections
   const sectionsResponse = await fetch(
     "https://api.todoist.com/rest/v1/sections",
@@ -45,6 +47,7 @@ export default async (req, res) => {
     });
   });
 
+  console.log("Deleting sections from Todoist");
   // Delete 'em
   await Promise.all(deleteSectionsPromises);
 
@@ -57,6 +60,7 @@ export default async (req, res) => {
     }
   });
 
+  console.log("Creating sections in Todoist");
   // Create the setions
   for (let i = 0; i < shoppingAreas.length; i++) {
     const sectionResponse = await fetch(
@@ -95,6 +99,7 @@ export default async (req, res) => {
     });
   });
 
+  console.log("Done creating tasks");
   await Promise.all(taskCreationPromises);
 
   res.statusCode = 200;
