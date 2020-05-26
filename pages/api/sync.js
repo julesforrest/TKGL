@@ -20,34 +20,6 @@ export default async (req, res) => {
     .map((record) => record.fields)
     .sort((a, b) => (a.Area > b.Area ? 1 : -1));
 
-  // Get all the sections
-  const sectionsResponse = await fetch(
-    "https://api.todoist.com/rest/v1/sections",
-    {
-      headers: {
-        Authorization: `Bearer ${todoistToken}`,
-      },
-    }
-  );
-
-  // Filter so that we're only looking at sections in the relevant project.
-  const sectionsToDelete = (await sectionsResponse.json()).filter(
-    (section) => section.project_id === todoistProjectId
-  );
-
-  // Create array of promises to delete setions
-  const deleteSectionsPromises = sectionsToDelete.map((section) => {
-    return fetch(`https://api.todoist.com/rest/v1/sections/${section.id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${todoistToken}`,
-      },
-    });
-  });
-
-  // Delete 'em
-  await Promise.all(deleteSectionsPromises);
-
   // These are the section that we'll create in Todoist
   let shoppingAreas = [];
 
